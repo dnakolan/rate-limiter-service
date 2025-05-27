@@ -13,6 +13,8 @@ import (
 
 	"github.com/dnakolan/rate-limiter-service/internal/config"
 	"github.com/dnakolan/rate-limiter-service/internal/handlers"
+	"github.com/dnakolan/rate-limiter-service/internal/services"
+	"github.com/dnakolan/rate-limiter-service/internal/storage"
 	"github.com/gin-gonic/gin"
 )
 
@@ -25,9 +27,15 @@ func main() {
 	router := gin.Default()
 	gin.SetMode(cfg.Server.GinMode)
 
+	storage := storage.NewRateLimitStorage()
+	service := services.NewLimitsService(storage)
+	handler := handlers.NewLimitsHandler(service)
+
 	healthHandler := handlers.NewHealthHandler()
 
 	router.GET("/health", healthHandler.GetHealthHandler)
+
+	router.POST("/limits", handler.CreateRateLimitHandler)
 
 	srv := &http.Server{
 		Addr:    fmt.Sprintf(":%s", cfg.Server.Port),
